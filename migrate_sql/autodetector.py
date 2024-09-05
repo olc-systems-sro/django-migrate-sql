@@ -1,17 +1,18 @@
+from django.db.migrations.autodetector import OperationDependency
 from django.db.migrations.operations import RunSQL
 from django.utils.datastructures import OrderedSet
 
+from migrate_sql.graph import SQLStateGraph, build_current_graph
 from migrate_sql.operations import (
     AlterSQL,
-    ReverseAlterSQL,
+    AlterSQLState,
     CreateSQL,
     DeleteSQL,
-    AlterSQLState,
+    ReverseAlterSQL,
 )
-from migrate_sql.graph import SQLStateGraph, build_current_graph
 
 
-class SQLBlob(object):
+class SQLBlob:
     pass
 
 
@@ -55,7 +56,7 @@ def is_sql_equal(sqls1, sqls2):
     if len(sqls1) != len(sqls2):
         return False
 
-    for sql1, sql2 in zip(sqls1, sqls2):
+    for sql1, sql2 in zip(sqls1, sqls2, strict=False):
         sql1, params1 = _sql_params(sql1)
         sql2, params2 = _sql_params(sql2)
         if sql1 != sql2 or params1 != params2:
@@ -144,10 +145,9 @@ class MigrationAutodetectorMixin:
         sequential operations.
         """
         deps = [
-            (dp[0], SQL_BLOB, dp[1], self._sql_operations.get(dp))
+            OperationDependency(dp[0], SQL_BLOB, dp[1], self._sql_operations.get(dp))
             for dp in dependencies
         ]
-
         self.add_operation(app_label, operation, dependencies=deps)
         self._sql_operations[(app_label, sql_name)] = operation
 
